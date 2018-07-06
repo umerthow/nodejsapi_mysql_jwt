@@ -1,0 +1,26 @@
+<html>
+    <head>
+        <%- include template/header.ejs %>
+        <title><%=(locals.title) ? title :''%></title>
+        <script>
+
+        // Enable pusher logging - don't include this in production
+        Pusher.logToConsole = true;
+    
+        var pusher = new Pusher('582cbdbfe6a34aeda1da', {
+          cluster: 'ap1',
+          encrypted: true
+        });
+    
+        var channel = pusher.subscribe('my-channel');
+        channel.bind('my-event', function(data) {
+          alert('Notifikasi : ' + data.message);
+        });
+      </script>
+    </head>
+    <body>
+    
+        <h2>Hello world<h2>
+    </body>
+
+</html>

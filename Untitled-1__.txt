@@ -1,0 +1,122 @@
+var createError = require('http-errors');
+var express = require('express');
+var routes = require('./routes');
+var path = require('path');
+var cookieParser = require('cookie-parser');
+var flash = require('express-flash')
+var logger = require('morgan');
+var config = require('./config')
+var indexRouter = require('./routes/index');
+var customers = require('./routes/customers');
+var user_api = require('./routes/users_api');
+
+var customers_api = require('./routes/customers_api');
+
+
+var methodOverride = require('method-override');
+var session = require('express-session');
+
+// var scheduleRoutes = require('./routes/schedule');
+// var about = require('./routes/about');
+
+var passport = require('passport');
+
+//load customer route
+
+var expressValidator = require('express-validator')
+var bodyParser = require('body-parser');
+var cors = require('cors');
+
+
+var app = express();
+var myConnection   = require('express-myconnection');
+var mysql = require('mysql');
+
+//setup database
+var dbOptions = {
+	host:	  config.database.host,
+	user: 	  config.database.user,
+	password: config.database.password,
+	port: 	  config.database.port, 
+	database: config.database.db
+}
+
+app.use(myConnection(mysql, dbOptions, 'pool'))
+
+// config passport and connect to DB
+require('./config/passport')(passport);
+
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+app.use(expressValidator());
+app.use(logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+
+//session
+app.use(session({ 
+  secret: 'keyboard cat',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { maxAge: 60000 }
+}))
+
+app.use(passport.initialize());
+app.use(passport.session()); // persistent login sessions
+app.use(flash());
+app.use(bodyParser.json()); // support json encoded bodies
+app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
+app.use(cookieParser('keyboard cat'));
+// app.use(methodOverride(function (req, res) {
+//   if (req.body && typeof req.body === 'object' && '_method' in req.body) {
+//     // look in urlencoded POST bodies and delete it
+//     var method = req.body._method
+//     delete req.body._method
+//     return method
+//   }
+// }))
+app.use(express.static(path.join(__dirname, 'public')));
+
+//CORS
+app.use(cors());
+
+const SERVER_SECRET = 'ohgodpleasenobug';
+
+
+ app.use('/', indexRouter);
+ app.use('/customers', customers);
+
+ app.use('/api/v1/customers', customers_api);
+
+
+ app.use('/api/v1', user_api);
+
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+  next(createError(404));
+});
+
+// error handler
+app.use(function(err, req, res, next) {
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
+});
+
+
+// app.get('/',routes.index);
+//app.get('/customers',customers.list);
+// app.get('/customers/add',customers.add);
+// app.post('/customers/add',customers.save);
+// app.get('/customers/delete/:id',customers.delete_customer);
+// app.get('/customers/edit/:id', customers.edit); 
+// app.post('/customers/edit/:id',customers.save_edit);
+// app.use(app.router);
+
+module.exports = app;
